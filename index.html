@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="RELYSE 結構縷理 運動按摩 by 凝聚運動顧問 CicoStudio">
+    <meta name="keywords" content="凝聚運動顧問,CicoStudio">
+    <title>⭔ 𝙍𝙀𝙇𝙔𝙎𝙀 結構縷理 × 運動按摩｜我要預約</title>
+    
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+
+        .fullscreen-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background-color: #ffffff; z-index: 10;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        .hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        #fillout-iframe {
+            width: 100vw; height: 100dvh; 
+            border: none; display: none;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3; border-top: 4px solid #06C755; 
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .block-screen { text-align: center; padding: 20px; }
+        .block-screen h2 { color: #333; margin-bottom: 10px; }
+        .block-screen p { color: #666; margin-bottom: 30px; font-size: 14px; line-height: 1.5; }
+        #qrcode { margin: 0 auto 30px auto; padding: 15px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: fit-content; }
+        
+        .btn {
+            background-color: #06C755; color: white; text-decoration: none; border: none; cursor: pointer;
+            padding: 14px 28px; border-radius: 12px; font-weight: bold; font-size: 16px;
+            display: inline-block; transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+        .btn:active { transform: scale(0.95); background-color: #05a044; }
+        
+        /* 錯誤按鈕專用樣式 (可稍微區分顏色，這裡使用深灰色/黑色增加警示感，或維持綠色也可) */
+        .btn-error { background-color: #333; }
+        .btn-error:active { background-color: #000; }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen" class="fullscreen-overlay">
+        <div class="spinner"></div>
+        <p style="margin-top: 20px; color: #666;">Loading...</p>
+    </div>
+
+    <div id="qr-screen" class="fullscreen-overlay hidden">
+        <div class="block-screen">
+            <h2>⭔ 𝙍𝙀𝙇𝙔𝙎𝙀 結構縷理 × 運動按摩</h2>
+            <p>請使用手機相機掃描下方 QR Code，<br>或點擊下方按鈕前往。</p>
+            <div id="qrcode"></div>
+            <a href="https://liff.line.me/2001467446-KNVd49W2" class="btn">手機點此跳轉 LINE</a>
+            <p>如無法跳轉，請長按按鈕 ->「在 LINE 中打開」</p>
+        </div>
+    </div>
+
+    <div id="success-screen" class="fullscreen-overlay hidden">
+        <div class="block-screen">
+            <h2 style="color: #06C755;">預約送出中～</h2>
+            <p>請按「送出」預塡訊息，完成預約。</p>
+            <button class="btn" id="manual-redirect-btn">如無正確跳轉，點此手動前往</button>
+        </div>
+    </div>
+
+    <div id="error-screen" class="fullscreen-overlay hidden">
+        <div class="block-screen">
+            <h2 style="color: #FF5B5B;">Oops，好像有點問題喔？</h2>
+            <p>請點按鈕到 LINE 私訊小編</p>
+            <a href="https://line.me/R/ti/p/@biu5388t" class="btn btn-error">點我 LINE 凝聚小編</a>
+        </div>
+    </div>
+
+    <iframe id="fillout-iframe"></iframe>
+
+    <script>
+        // ==========================================
+        // 1. 破窗防呆機制 (Frame-busting)
+        // ==========================================
+        if (window !== window.top) {
+            window.top.location.href = window.location.href;
+        } else {
+            const LIFF_ID = "2001467446-KNVd49W2";
+            const LIFF_URL = `https://liff.line.me/${LIFF_ID}`;
+            const OA_ID = "@biu5388t"; 
+
+            async function main() {
+                try {
+                    await liff.init({ liffId: LIFF_ID });
+
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('action') === 'completed') {
+                        await handleFormSubmit(urlParams);
+                        return; 
+                    }
+
+                    checkEnvironment();
+
+                } catch (error) {
+                    console.error("LIFF 初始化失敗", error);
+                    // 【修改】將 alert 改為顯示錯誤畫面
+                    showScreen('error-screen');
+                }
+            }
+
+            async function handleFormSubmit(params) {
+                if (sessionStorage.getItem('message_sent') === 'true') {
+                    showScreen('success-screen');
+                    document.getElementById('manual-redirect-btn').onclick = () => liff.closeWindow();
+                    document.getElementById('manual-redirect-btn').innerText = "關閉視窗";
+                    return;
+                }
+
+                const messageText = 
+`【首次體驗預約】請點 ➤ 送出
+　
+ ✦ ${params.get('name') || '未填寫'} ${params.get('phone') || '未填寫'}
+ ✦ ${params.get('location') || '未選擇'} ${params.get('trainer') || '無'}
+ ✦ ${params.get('promocamp') || '無'} ${params.get('referer') || '無'} 
+ ✦ ${params.get('datetime') || ''}`;
+
+                try {
+                    if (liff.isInClient()) {
+                        sessionStorage.setItem('message_sent', 'true');
+                        
+                        const encodedMessage = encodeURIComponent(messageText);
+                        const redirectUrl = `https://line.me/R/oaMessage/${OA_ID}/?${encodedMessage}`;
+                        
+                        showScreen('success-screen');
+                        
+                        document.getElementById('manual-redirect-btn').onclick = () => {
+                            window.location.href = redirectUrl;
+                        };
+
+                        setTimeout(() => {
+                            window.location.href = redirectUrl;
+                        }, 500);
+
+                    } else {
+                        showScreen('success-screen');
+                    }
+                } catch (error) {
+                    console.error("處理跳轉失敗", error);
+                    // 【修改】處理跳轉失敗時，也引導去找小編
+                    showScreen('error-screen');
+                }
+            }
+
+            function checkEnvironment() {
+                const os = liff.getOS(); 
+                const isInClient = liff.isInClient();
+
+                if (os === 'web' || os === 'mac' || os === 'windows' || !isInClient) {
+                    generateQRCode(LIFF_URL);
+                    showScreen('qr-screen');
+                } else {
+                    loadFilloutIframe();
+                }
+            }
+
+            async function loadFilloutIframe() {
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+
+                try {
+                    const profile = await liff.getProfile();
+                    const userId = profile.userId;
+                    
+                    const iframe = document.getElementById('fillout-iframe');
+                    iframe.src = `https://cicostudio.fillout.com/t/s2Q1z59UH1us?userid=${userId}`;
+                    
+                    iframe.style.display = 'block';
+                    hideAllScreens(); 
+                } catch (error) {
+                    console.error("無法獲取使用者資料", error);
+                    // 【修改】獲取資料失敗時，也顯示錯誤畫面
+                    showScreen('error-screen');
+                }
+            }
+
+            // --- UI 輔助函式更新 ---
+            function showScreen(screenId) {
+                // 確保切換畫面時，將包含錯誤畫面的所有 overlay 都先隱藏
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('qr-screen').classList.add('hidden');
+                document.getElementById('success-screen').classList.add('hidden');
+                document.getElementById('error-screen').classList.add('hidden');
+                
+                document.getElementById(screenId).classList.remove('hidden');
+            }
+
+            function hideAllScreens() {
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('qr-screen').classList.add('hidden');
+                document.getElementById('success-screen').classList.add('hidden');
+                document.getElementById('error-screen').classList.add('hidden');
+            }
+
+            function generateQRCode(url) {
+                document.getElementById("qrcode").innerHTML = "";
+                new QRCode(document.getElementById("qrcode"), {
+                    text: url, width: 180, height: 180,
+                    colorDark : "#000000", colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            }
+
+            main();
+        }
+    </script>
+</body>
+</html>
